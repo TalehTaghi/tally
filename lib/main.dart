@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'home_shell.dart';
+
 void main() {
   runApp(const TallyApp());
 }
@@ -15,14 +17,7 @@ class TallyApp extends StatelessWidget {
         colorSchemeSeed: Colors.deepPurple,
         useMaterial3: true,
       ),
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Tally'),
-        ),
-        body: const Center(
-          child: Text('Tally'),
-        ),
-      ),
+      home: const HomeShell(),
     );
   }
 }
