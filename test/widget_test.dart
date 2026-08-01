@@ -8,8 +8,10 @@ void main() {
   testWidgets('opens on the Routines tab', (WidgetTester tester) async {
     await tester.pumpWidget(const TallyApp());
 
+    // RoutinesScreen's data-loading states (spinner/list/empty) are
+    // covered by routines_screen_test.dart with a fake DAO; this smoke
+    // test only checks that the app boots on the right tab.
     expect(find.widgetWithText(AppBar, 'Routines'), findsOneWidget);
-    expect(find.text('No routines yet'), findsOneWidget);
   });
 
   testWidgets('tapping History switches the visible tab', (

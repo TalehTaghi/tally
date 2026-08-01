@@ -13,11 +13,6 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _selectedIndex = 0;
 
-  static const _screens = [
-    RoutinesScreen(),
-    HistoryScreen(),
-  ];
-
   void _onDestinationSelected(int index) {
     setState(() {
       _selectedIndex = index;
@@ -26,8 +21,9 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    final screens = [RoutinesScreen(), const HistoryScreen()];
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: screens[_selectedIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onDestinationSelected,
