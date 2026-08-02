@@ -99,4 +99,60 @@ void main() {
       expect(routines, isEmpty);
     },
   );
+
+  test('addExerciseToRoutine appends after the existing exercises', () async {
+    final exercises = await exerciseDao.getAll();
+    final routineId = await routineDao.createRoutine('Push Day', [
+      exercises[0].id!,
+    ]);
+
+    await routineDao.addExerciseToRoutine(routineId, exercises[1].id!);
+
+    final linked = await routineDao.getExercisesForRoutine(routineId);
+    expect(linked.map((e) => e.id).toList(), [
+      exercises[0].id,
+      exercises[1].id,
+    ]);
+  });
+
+  test(
+    'removeExerciseFromRoutine deletes the join row, not the exercise',
+    () async {
+      final exercises = await exerciseDao.getAll();
+      final routineId = await routineDao.createRoutine('Push Day', [
+        exercises[0].id!,
+        exercises[1].id!,
+      ]);
+
+      await routineDao.removeExerciseFromRoutine(routineId, exercises[0].id!);
+
+      final linked = await routineDao.getExercisesForRoutine(routineId);
+      expect(linked.map((e) => e.id).toList(), [exercises[1].id]);
+
+      final catalog = await exerciseDao.getAll();
+      expect(catalog.map((e) => e.id), contains(exercises[0].id));
+    },
+  );
+
+  test('updateExerciseOrder rewrites position to match the new order', () async {
+    final exercises = await exerciseDao.getAll();
+    final routineId = await routineDao.createRoutine('Push Day', [
+      exercises[0].id!,
+      exercises[1].id!,
+      exercises[2].id!,
+    ]);
+
+    await routineDao.updateExerciseOrder(routineId, [
+      exercises[2].id!,
+      exercises[0].id!,
+      exercises[1].id!,
+    ]);
+
+    final linked = await routineDao.getExercisesForRoutine(routineId);
+    expect(linked.map((e) => e.id).toList(), [
+      exercises[2].id,
+      exercises[0].id,
+      exercises[1].id,
+    ]);
+  });
 }

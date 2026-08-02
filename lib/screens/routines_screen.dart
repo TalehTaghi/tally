@@ -4,6 +4,7 @@ import '../data/routine_dao.dart';
 import '../models/routine.dart';
 import 'exercises_screen.dart';
 import 'new_routine_screen.dart';
+import 'routine_detail_screen.dart';
 
 const _monthNames = [
   'Jan',
@@ -100,6 +101,14 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
               return ListTile(
                 title: Text(routine.name),
                 subtitle: Text(_formatCreatedAt(routine.createdAt)),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          RoutineDetailScreen(routine: routine),
+                    ),
+                  );
+                },
               );
             },
           );

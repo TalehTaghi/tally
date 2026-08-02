@@ -46,9 +46,13 @@ class FakeExerciseDao extends ExerciseDao {
 }
 
 class FakeRoutineDao extends RoutineDao {
-  FakeRoutineDao(List<Routine> initial) : _routines = List.of(initial);
+  FakeRoutineDao(List<Routine> initial, {List<Exercise> exerciseCatalog = const []})
+      : _routines = List.of(initial),
+        _exerciseCatalog = List.of(exerciseCatalog);
 
   final List<Routine> _routines;
+  final List<Exercise> _exerciseCatalog;
+  final Map<int, List<int>> _exerciseIdsByRoutineId = {};
   Completer<void>? _blocker;
 
   String? lastCreatedName;
@@ -60,7 +64,10 @@ class FakeRoutineDao extends RoutineDao {
 
   /// Lets a test simulate another screen having created a routine,
   /// without going through [createRoutine].
-  void addRoutine(Routine routine) => _routines.add(routine);
+  void addRoutine(Routine routine, {List<int> exerciseIds = const []}) {
+    _routines.add(routine);
+    _exerciseIdsByRoutineId[routine.id!] = List.of(exerciseIds);
+  }
 
   @override
   Future<int> createRoutine(String name, List<int> exerciseIds) async {
@@ -68,6 +75,7 @@ class FakeRoutineDao extends RoutineDao {
     lastCreatedExerciseIds = exerciseIds;
     final id = _routines.length + 1;
     _routines.add(Routine(id: id, name: name, createdAt: DateTime.now()));
+    _exerciseIdsByRoutineId[id] = List.of(exerciseIds);
     return id;
   }
 
@@ -83,6 +91,27 @@ class FakeRoutineDao extends RoutineDao {
 
   @override
   Future<List<Exercise>> getExercisesForRoutine(int routineId) async {
-    return [];
+    final ids = _exerciseIdsByRoutineId[routineId] ?? const [];
+    return ids
+        .map((id) => _exerciseCatalog.firstWhere((exercise) => exercise.id == id))
+        .toList();
+  }
+
+  @override
+  Future<void> addExerciseToRoutine(int routineId, int exerciseId) async {
+    (_exerciseIdsByRoutineId[routineId] ??= []).add(exerciseId);
+  }
+
+  @override
+  Future<void> removeExerciseFromRoutine(int routineId, int exerciseId) async {
+    _exerciseIdsByRoutineId[routineId]?.remove(exerciseId);
+  }
+
+  @override
+  Future<void> updateExerciseOrder(
+    int routineId,
+    List<int> orderedExerciseIds,
+  ) async {
+    _exerciseIdsByRoutineId[routineId] = List.of(orderedExerciseIds);
   }
 }
