@@ -4,6 +4,7 @@ import '../data/exercise_dao.dart';
 import '../data/routine_dao.dart';
 import '../models/exercise.dart';
 import '../models/routine.dart';
+import 'log_workout_screen.dart';
 
 class RoutineDetailScreen extends StatefulWidget {
   RoutineDetailScreen({
@@ -117,10 +118,36 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
     await _loadExercises();
   }
 
+  Future<void> _startWorkout() async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => LogWorkoutScreen(
+          routine: widget.routine,
+          routineDao: widget._routineDao,
+        ),
+      ),
+    );
+    if (saved == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Workout saved')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final canStartWorkout = _exercises?.isNotEmpty ?? false;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.routine.name)),
+      appBar: AppBar(
+        title: Text(widget.routine.name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.play_arrow),
+            tooltip: 'Start workout',
+            onPressed: canStartWorkout ? _startWorkout : null,
+          ),
+        ],
+      ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: _exercises == null ? null : _openAddExercisePicker,

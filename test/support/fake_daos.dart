@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:tally/data/exercise_dao.dart';
 import 'package:tally/data/routine_dao.dart';
+import 'package:tally/data/workout_dao.dart';
 import 'package:tally/models/exercise.dart';
 import 'package:tally/models/routine.dart';
+import 'package:tally/models/workout.dart';
 
 /// In-memory stand-ins for the real DAOs.
 ///
@@ -113,5 +115,15 @@ class FakeRoutineDao extends RoutineDao {
     List<int> orderedExerciseIds,
   ) async {
     _exerciseIdsByRoutineId[routineId] = List.of(orderedExerciseIds);
+  }
+}
+
+class FakeWorkoutDao extends WorkoutDao {
+  final List<Workout> savedWorkouts = [];
+
+  @override
+  Future<int> saveWorkout(Workout workout) async {
+    savedWorkouts.add(workout);
+    return savedWorkouts.length;
   }
 }
