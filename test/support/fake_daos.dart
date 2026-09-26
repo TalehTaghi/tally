@@ -4,6 +4,7 @@ import 'package:tally/data/exercise_dao.dart';
 import 'package:tally/data/routine_dao.dart';
 import 'package:tally/data/workout_dao.dart';
 import 'package:tally/models/exercise.dart';
+import 'package:tally/models/last_time.dart';
 import 'package:tally/models/routine.dart';
 import 'package:tally/models/workout.dart';
 import 'package:tally/models/workout_set.dart';
@@ -156,5 +157,27 @@ class FakeWorkoutDao extends WorkoutDao {
         final byExercise = a.exerciseId.compareTo(b.exerciseId);
         return byExercise != 0 ? byExercise : a.setNumber.compareTo(b.setNumber);
       });
+  }
+
+  /// In-memory stand-in for the SQL query: newest workout (id breaks a
+  /// tie) that has a set for [exerciseId], and just that exercise's sets.
+  @override
+  Future<LastTime?> getLastTimeForExercise(int exerciseId) async {
+    final candidates = savedWorkouts
+        .where((w) => w.sets.any((s) => s.exerciseId == exerciseId))
+        .toList()
+      ..sort((a, b) {
+        final byDate = b.startedAt.compareTo(a.startedAt);
+        return byDate != 0 ? byDate : b.id!.compareTo(a.id!);
+      });
+    if (candidates.isEmpty) {
+      return null;
+    }
+    final latest = candidates.first;
+    return LastTime(
+      startedAt: latest.startedAt,
+      sets: latest.sets.where((s) => s.exerciseId == exerciseId).toList()
+        ..sort((a, b) => a.setNumber.compareTo(b.setNumber)),
+    );
   }
 }

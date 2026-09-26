@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import '../data/routine_dao.dart';
 import '../data/workout_dao.dart';
+import '../formatting.dart';
 import '../models/exercise.dart';
+import '../models/last_time.dart';
 import '../models/routine.dart';
 import '../models/workout.dart';
 import '../models/workout_set.dart';
@@ -63,6 +66,10 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
   /// Nothing here touches the database until [_save].
   final Map<int, List<_SetRow>> _setRowsByExerciseId = {};
 
+  /// exercise id → what you did last time, or null if it's never been
+  /// logged. Read-only: shown as a hint, never copied into the draft.
+  final Map<int, LastTime?> _lastTimeByExerciseId = {};
+
   /// Once the user has tried to save, invalid fields show their errors.
   bool _showErrors = false;
   bool _isSaving = false;
@@ -88,9 +95,18 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
       final exercises = await widget._routineDao.getExercisesForRoutine(
         widget.routine.id!,
       );
+      // One small query per exercise, all in flight at once.
+      final lastTimes = await Future.wait(
+        exercises.map(
+          (exercise) => widget._workoutDao.getLastTimeForExercise(exercise.id!),
+        ),
+      );
       if (!mounted) return;
       setState(() {
         _exercises = exercises;
+        for (var i = 0; i < exercises.length; i++) {
+          _lastTimeByExerciseId[exercises[i].id!] = lastTimes[i];
+        }
         // Start every exercise with one empty row, ready to type into.
         for (final exercise in exercises) {
           _setRowsByExerciseId[exercise.id!] = [_SetRow()];
@@ -270,6 +286,18 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
     );
   }
 
+  /// e.g. "Last time (Aug 1): 60×8, 60×8, 62.5×6"
+  String _lastTimeHint(LastTime? lastTime) {
+    if (lastTime == null) {
+      return 'No previous data';
+    }
+    final date = DateFormat.MMMd().format(lastTime.startedAt);
+    final sets = lastTime.sets
+        .map((set) => '${formatWeight(set.weight)}×${set.reps}')
+        .join(', ');
+    return 'Last time ($date): $sets';
+  }
+
   Widget _buildExerciseCard(Exercise exercise) {
     final exerciseId = exercise.id!;
     final rows = _setRowsByExerciseId[exerciseId]!;
@@ -282,6 +310,10 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(exercise.name, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              _lastTimeHint(_lastTimeByExerciseId[exerciseId]),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
             for (var i = 0; i < rows.length; i++)
               _buildSetRow(exerciseId, rows[i], setNumber: i + 1),
             TextButton.icon(

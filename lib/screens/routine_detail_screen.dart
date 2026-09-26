@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/exercise_dao.dart';
 import '../data/routine_dao.dart';
+import '../data/workout_dao.dart';
 import '../models/exercise.dart';
 import '../models/routine.dart';
 import 'log_workout_screen.dart';
@@ -12,12 +13,15 @@ class RoutineDetailScreen extends StatefulWidget {
     required this.routine,
     RoutineDao? routineDao,
     ExerciseDao? exerciseDao,
+    WorkoutDao? workoutDao,
   })  : _routineDao = routineDao ?? RoutineDao(),
-        _exerciseDao = exerciseDao ?? ExerciseDao();
+        _exerciseDao = exerciseDao ?? ExerciseDao(),
+        _workoutDao = workoutDao ?? WorkoutDao();
 
   final Routine routine;
   final RoutineDao _routineDao;
   final ExerciseDao _exerciseDao;
+  final WorkoutDao _workoutDao;
 
   @override
   State<RoutineDetailScreen> createState() => _RoutineDetailScreenState();
@@ -124,6 +128,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
         builder: (context) => LogWorkoutScreen(
           routine: widget.routine,
           routineDao: widget._routineDao,
+          workoutDao: widget._workoutDao,
         ),
       ),
     );

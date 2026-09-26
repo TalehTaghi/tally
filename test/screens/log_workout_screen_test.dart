@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tally/models/exercise.dart';
 import 'package:tally/models/routine.dart';
+import 'package:tally/models/workout.dart';
+import 'package:tally/models/workout_set.dart';
 import 'package:tally/screens/log_workout_screen.dart';
 import 'package:tally/screens/routine_detail_screen.dart';
 
@@ -243,6 +245,7 @@ void main() {
           routine: routine,
           routineDao: routineDao,
           exerciseDao: FakeExerciseDao([_benchPress, _pullUp]),
+          workoutDao: workoutDao,
         ),
       ),
     );
@@ -253,5 +256,58 @@ void main() {
 
     expect(find.byType(LogWorkoutScreen), findsOneWidget);
     expect(find.text('Add set'), findsNWidgets(2));
+  });
+
+  testWidgets('shows last time\'s sets per exercise, or No previous data', (
+    tester,
+  ) async {
+    workoutDao = FakeWorkoutDao([
+      Workout(
+        id: 1,
+        routineId: routine.id!,
+        startedAt: DateTime(2026, 8, 1, 18),
+        sets: [
+          WorkoutSet(exerciseId: _benchPress.id!, setNumber: 1, reps: 8, weight: 60),
+          WorkoutSet(exerciseId: _benchPress.id!, setNumber: 2, reps: 8, weight: 60),
+          WorkoutSet(
+            exerciseId: _benchPress.id!,
+            setNumber: 3,
+            reps: 6,
+            weight: 62.5,
+          ),
+        ],
+      ),
+    ]);
+
+    await openLogScreen(tester);
+
+    expect(
+      find.text('Last time (Aug 1): 60×8, 60×8, 62.5×6'),
+      findsOneWidget,
+    );
+    // Pull Up has never been logged.
+    expect(find.text('No previous data'), findsOneWidget);
+  });
+
+  testWidgets('the hint is read-only: set fields start empty', (
+    tester,
+  ) async {
+    workoutDao = FakeWorkoutDao([
+      Workout(
+        id: 1,
+        routineId: routine.id!,
+        startedAt: DateTime(2026, 8, 1, 18),
+        sets: [
+          WorkoutSet(exerciseId: _benchPress.id!, setNumber: 1, reps: 8, weight: 60),
+        ],
+      ),
+    ]);
+
+    await openLogScreen(tester);
+
+    final reps = tester.widget<TextField>(repsField(0));
+    final weight = tester.widget<TextField>(weightField(0));
+    expect(reps.controller!.text, isEmpty);
+    expect(weight.controller!.text, isEmpty);
   });
 }

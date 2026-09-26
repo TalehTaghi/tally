@@ -3,14 +3,12 @@ import 'package:intl/intl.dart';
 
 import '../data/exercise_dao.dart';
 import '../data/workout_dao.dart';
+import '../formatting.dart';
 import '../models/workout.dart';
 import '../models/workout_set.dart';
 
 /// One exercise's sets within the workout, ready to render.
 typedef _ExerciseGroup = ({String exerciseName, List<WorkoutSet> sets});
-
-/// Shows weight without a pointless ".0" — 60.0 → "60", 62.5 → "62.5".
-final _weightFormat = NumberFormat('0.##');
 
 class WorkoutDetailScreen extends StatefulWidget {
   WorkoutDetailScreen({
@@ -133,7 +131,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                 // weight × reps, the usual lifting shorthand: "62.5 × 6".
                 child: Text(
                   'Set ${set.setNumber}:  '
-                  '${_weightFormat.format(set.weight)} × ${set.reps}',
+                  '${formatWeight(set.weight)} × ${set.reps}',
                 ),
               ),
           ],

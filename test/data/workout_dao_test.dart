@@ -189,4 +189,80 @@ void main() {
       expect(workouts, isEmpty);
     },
   );
+
+  group('getLastTimeForExercise', () {
+    test('returns null for an exercise that has never been logged', () async {
+      final exercises = await exerciseDao.getAll();
+
+      final lastTime = await workoutDao.getLastTimeForExercise(
+        exercises[0].id!,
+      );
+
+      expect(lastTime, isNull);
+    });
+
+    test(
+      'returns that exercise\'s sets from the newest workout containing it',
+      () async {
+        final exercises = await exerciseDao.getAll();
+        final bench = exercises[0].id!;
+        final squat = exercises[1].id!;
+        final routineId = await routineDao.createRoutine('Mixed', [
+          bench,
+          squat,
+        ]);
+
+        // Oldest: bench only.
+        await workoutDao.saveWorkout(
+          Workout(
+            routineId: routineId,
+            startedAt: DateTime.fromMillisecondsSinceEpoch(1000),
+            sets: [
+              WorkoutSet(exerciseId: bench, setNumber: 0, reps: 5, weight: 50),
+            ],
+          ),
+        );
+        // Middle: bench and squat — this is "last time" for bench.
+        await workoutDao.saveWorkout(
+          Workout(
+            routineId: routineId,
+            startedAt: DateTime.fromMillisecondsSinceEpoch(2000),
+            sets: [
+              WorkoutSet(exerciseId: bench, setNumber: 0, reps: 8, weight: 60),
+              WorkoutSet(exerciseId: squat, setNumber: 0, reps: 5, weight: 100),
+              WorkoutSet(
+                exerciseId: bench,
+                setNumber: 0,
+                reps: 6,
+                weight: 62.5,
+              ),
+            ],
+          ),
+        );
+        // Newest: squat only — must not count for bench.
+        await workoutDao.saveWorkout(
+          Workout(
+            routineId: routineId,
+            startedAt: DateTime.fromMillisecondsSinceEpoch(3000),
+            sets: [
+              WorkoutSet(exerciseId: squat, setNumber: 0, reps: 5, weight: 105),
+            ],
+          ),
+        );
+
+        final lastTime = await workoutDao.getLastTimeForExercise(bench);
+
+        expect(lastTime, isNotNull);
+        expect(lastTime!.startedAt.millisecondsSinceEpoch, 2000);
+        expect(
+          lastTime.sets.map((s) => (s.exerciseId, s.setNumber, s.reps, s.weight)),
+          [(bench, 1, 8, 60.0), (bench, 2, 6, 62.5)],
+        );
+
+        final squatLastTime = await workoutDao.getLastTimeForExercise(squat);
+        expect(squatLastTime!.startedAt.millisecondsSinceEpoch, 3000);
+        expect(squatLastTime.sets.single.weight, 105.0);
+      },
+    );
+  });
 }

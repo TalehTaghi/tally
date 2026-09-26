@@ -1,3 +1,4 @@
+import '../models/last_time.dart';
 import '../models/workout.dart';
 import '../models/workout_set.dart';
 import 'database_helper.dart';
@@ -62,5 +63,45 @@ class WorkoutDao {
       orderBy: 'exercise_id, set_number',
     );
     return rows.map(WorkoutSet.fromMap).toList();
+  }
+
+  /// The sets for [exerciseId] from the most recent workout that
+  /// included it, or null if it has never been logged.
+  ///
+  /// The inner query picks *which* workout: every workout that has a set
+  /// for this exercise, newest first, take one (id breaks a tie on
+  /// started_at). The outer query then fetches this exercise's sets from
+  /// just that workout. A workout still being logged isn't in the
+  /// database yet, so it can never be "last time".
+  Future<LastTime?> getLastTimeForExercise(int exerciseId) async {
+    final db = await _databaseHelper.database;
+    final rows = await db.rawQuery(
+      '''
+      SELECT sets.*, workouts.started_at
+      FROM sets
+      JOIN workouts ON workouts.id = sets.workout_id
+      WHERE sets.exercise_id = ?
+        AND sets.workout_id = (
+          SELECT workouts.id
+          FROM workouts
+          JOIN sets ON sets.workout_id = workouts.id
+          WHERE sets.exercise_id = ?
+          ORDER BY workouts.started_at DESC, workouts.id DESC
+          LIMIT 1
+        )
+      ORDER BY sets.set_number
+      ''',
+      [exerciseId, exerciseId],
+    );
+
+    if (rows.isEmpty) {
+      return null;
+    }
+    return LastTime(
+      startedAt: DateTime.fromMillisecondsSinceEpoch(
+        rows.first['started_at'] as int,
+      ),
+      sets: rows.map(WorkoutSet.fromMap).toList(),
+    );
   }
 }
