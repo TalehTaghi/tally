@@ -6,6 +6,7 @@ import 'package:tally/data/workout_dao.dart';
 import 'package:tally/models/exercise.dart';
 import 'package:tally/models/routine.dart';
 import 'package:tally/models/workout.dart';
+import 'package:tally/models/workout_set.dart';
 
 /// In-memory stand-ins for the real DAOs.
 ///
@@ -119,11 +120,41 @@ class FakeRoutineDao extends RoutineDao {
 }
 
 class FakeWorkoutDao extends WorkoutDao {
-  final List<Workout> savedWorkouts = [];
+  FakeWorkoutDao([List<Workout> initial = const []])
+      : savedWorkouts = List.of(initial);
+
+  /// Every workout this fake holds, including ones passed to
+  /// [saveWorkout] — each keeps its sets, so the fake needs no separate
+  /// sets table.
+  final List<Workout> savedWorkouts;
 
   @override
   Future<int> saveWorkout(Workout workout) async {
-    savedWorkouts.add(workout);
-    return savedWorkouts.length;
+    final id = savedWorkouts.length + 1;
+    savedWorkouts.add(
+      Workout(
+        id: id,
+        routineId: workout.routineId,
+        startedAt: workout.startedAt,
+        sets: workout.sets,
+      ),
+    );
+    return id;
+  }
+
+  @override
+  Future<List<Workout>> getAllWorkouts() async {
+    return List.of(savedWorkouts)
+      ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+  }
+
+  @override
+  Future<List<WorkoutSet>> getSetsForWorkout(int workoutId) async {
+    final workout = savedWorkouts.firstWhere((w) => w.id == workoutId);
+    return List.of(workout.sets)
+      ..sort((a, b) {
+        final byExercise = a.exerciseId.compareTo(b.exerciseId);
+        return byExercise != 0 ? byExercise : a.setNumber.compareTo(b.setNumber);
+      });
   }
 }

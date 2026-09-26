@@ -21,7 +21,7 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    final screens = [RoutinesScreen(), const HistoryScreen()];
+    final screens = [RoutinesScreen(), HistoryScreen()];
     return Scaffold(
       body: screens[_selectedIndex],
       bottomNavigationBar: NavigationBar(

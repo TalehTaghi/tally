@@ -29,7 +29,8 @@ void main() {
     await tester.tap(find.text('History'));
     await tester.pump();
 
+    // HistoryScreen's loading/list/empty states are covered by
+    // history_screen_test.dart with fake DAOs.
     expect(find.widgetWithText(AppBar, 'History'), findsOneWidget);
-    expect(find.text('No workouts logged yet'), findsOneWidget);
   });
 }
